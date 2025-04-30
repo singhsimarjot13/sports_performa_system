@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/student');
+const studentController = require('../controllers/studentController');
 
 // GET /students - fetch all or by URN
 router.get('/students', async (req, res) => {
@@ -33,34 +34,30 @@ router.get('/students', async (req, res) => {
 });
 
 
-router.post('/manual-entry', async (req, res) => {
-    const { urn, name, branch, activity, position } = req.body;
-  
-    try {
-      let student = await Student.findOne({ urn });
-  
-      if (student) {
-        // Update existing student
-        student.events.push({ activity, position });
-        await student.save();
-        return res.status(200).json({ message: 'Updated existing student', student });
-      } else {
-        // Create new student
-        student = new Student({
-          name,
-          urn,
-          branch,
-          events: [{ activity, position }],
-        });
-        await student.save();
-        return res.status(201).json({ message: 'Created new student', student });
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
-  
+// Get all students
+router.get('/', studentController.getAllStudents);
 
+// Get student by URN
+router.get('/by-urn', studentController.getStudentByUrn);
+
+// Create student (manual entry)
+router.post('/manual-entry', studentController.createStudent);
+
+// Update student
+router.put('/:id', studentController.updateStudent);
+
+// Delete student
+router.delete('/:id', studentController.deleteStudent);
+
+// Add preview endpoint
+router.post('/manual-entry/preview', async (req, res) => {
+  try {
+    const student = req.body;
+    res.status(200).json({ student });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

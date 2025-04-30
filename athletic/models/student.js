@@ -2,43 +2,43 @@ const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema({
   srNo: Number,
-  name: String,
-  fatherName: String,
-  dob: String,
-  universityRegNo:String,
-  branchYear: String,
+  name: { type: String, required: true },
+  fatherName: { type: String, required: true },
+  dob: { type: String, required: true },
+  universityRegNo: { type: String, required: true, unique: true },
+  branchYear: { type: String, required: true },
 
   // Year of passing
-  matricYear: String,
-  plusTwoYear: String,
+  matricYear: { type: String, required: true },
+  plusTwoYear: { type: String, required: true },
 
-  firstAdmissionYear: String,
+  firstAdmissionYear: { type: String, required: true },
 
   // Last Exam Passed
-  lastExam: String,
-  lastExamYear: String,
+  lastExam: { type: String, required: true },
+  lastExamYear: { type: String, required: true },
 
   // Inter College years (graduate + pg)
-  interCollegeGraduateYears: String,
-  interCollegePgYears: String,
+  interCollegeGraduateYears: { type: String, required: true },
+  interCollegePgYears: { type: String, required: true },
 
   // Inter Varsity
-  interVarsityYears: String,
+  interVarsityYears: { type: String, required: true },
 
   // Contact Info
-  addressWithPhone: String,
+  addressWithPhone: { type: String, required: true },
 
   // Uploaded photos
-  signatureUrl: String,
-  passportPhotoUrl: String,
+  signatureUrl: { type: String },
+  passportPhotoUrl: { type: String },
 
   // Activities and Positions
   events: [
     {
-      activity: String,
-      position: String,
-    },
-  ],
+      activity: { type: String, required: true },
+      position: { type: String, required: true }
+    }
+  ]
 });
 
 module.exports = mongoose.model("Student", studentSchema);

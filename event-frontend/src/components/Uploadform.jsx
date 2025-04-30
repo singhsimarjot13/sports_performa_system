@@ -21,6 +21,10 @@ function UploadForm() {
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
   const handlePreview = async () => {
     if (!file || !event || !position) {
       alert("Please select a file, event, and position");
@@ -60,7 +64,7 @@ function UploadForm() {
         Upload Event Participation File
       </Typography>
 
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+      <input type="file" onChange={handleFileChange} />
       <br />
       <br />
 
@@ -112,7 +116,7 @@ function UploadForm() {
               <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
                 <TableCell rowSpan={2}>Sr. No</TableCell>
                 <TableCell rowSpan={2}>Name</TableCell>
-                <TableCell rowSpan={2}>Father’s Name</TableCell>
+                <TableCell rowSpan={2}>Father's Name</TableCell>
                 <TableCell rowSpan={2}>Date of Birth</TableCell>
                 <TableCell rowSpan={2}>University Reg. No</TableCell>
                 <TableCell rowSpan={2}>Present Branch/Year</TableCell>
@@ -127,44 +131,15 @@ function UploadForm() {
                 <TableCell rowSpan={2}>Activity</TableCell>
                 <TableCell rowSpan={2}>Position</TableCell>
               </TableRow>
-              </TableHead>
               <TableRow sx={{ backgroundColor: "#e0e0e0" }}>
-  <TableCell>1</TableCell>   {/* Sr. No */}
-  <TableCell>2</TableCell>   {/* Name */}
-  <TableCell>3</TableCell>   {/* Father’s Name */}
-  <TableCell>4</TableCell>   {/* Date of Birth */}
-  <TableCell>5</TableCell>   {/* University Reg. No */}
-  <TableCell>6</TableCell>   {/* Branch / Year */}
-  <TableCell>
-    Matric<br />7(a)
-  </TableCell>
-  <TableCell>
-    +2<br />7(b)
-  </TableCell>
-  <TableCell>8</TableCell>   {/* Date of First Admission */}
-  <TableCell>
-    Name<br />9(a)
-  </TableCell>
-  <TableCell>
-    Year<br />9(b)
-  </TableCell>
-  <TableCell>
-    Graduate<br />10(a)
-  </TableCell>
-  <TableCell>
-    PG<br />10(b)
-  </TableCell>
-  <TableCell>11</TableCell>  {/* Inter Varsity */}
-  <TableCell>12</TableCell>  {/* Signature */}
-  <TableCell>13</TableCell>  {/* Home Address */}
-  <TableCell>14</TableCell>  {/* Passport Size Photo */}
-  <TableCell>15</TableCell>  {/* Activity */}
-  <TableCell>16</TableCell>  {/* Position */}
-</TableRow>
-
-
-
-
+                <TableCell>Matric<br />7(a)</TableCell>
+                <TableCell>+2<br />7(b)</TableCell>
+                <TableCell>Name<br />9(a)</TableCell>
+                <TableCell>Year<br />9(b)</TableCell>
+                <TableCell>Graduate<br />10(a)</TableCell>
+                <TableCell>PG<br />10(b)</TableCell>
+              </TableRow>
+            </TableHead>
             <TableBody>
               {students.map((student, index) => (
                 <TableRow key={index}>

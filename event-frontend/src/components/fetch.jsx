@@ -176,9 +176,18 @@ function Fetch() {
                 <td>{s.universityRegNo}</td>
                 <td>{s.branchYear}</td>
                 <td>
-  <pre>{formatEvents(s.events, true)}</pre>
-</td>
-
+                  {s.events && s.events.length > 0 ? (
+                    <pre>
+                      {s.events.map((event, i) => (
+                        <div key={i}>
+                          {event.position} in {event.activity}
+                        </div>
+                      ))}
+                    </pre>
+                  ) : (
+                    'No events'
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

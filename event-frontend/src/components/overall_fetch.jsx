@@ -5,11 +5,12 @@ import {
   Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, WidthType, TextRun,  ImageRun,
   HeadingLevel,Alignment
 } from 'docx';
-import { Button, Container, Typography, Paper, Table as MuiTable, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Button, Container, Typography, Paper, Table as MuiTable, TableBody, TableCell, TableHead, TableRow, Checkbox } from '@mui/material';
 import ExcelJS from 'exceljs';
 
 function Overall() {
   const [students, setStudents] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [filters, setFilters] = useState({
     urn: '',
     name: '',
@@ -29,22 +30,49 @@ function Overall() {
     try {
       const queryParams = new URLSearchParams();
 
+      // Only add non-empty filters
       Object.entries(filters).forEach(([key, val]) => {
-        if (val.trim()) queryParams.append(key, val.trim());
+        if (val && val.trim()) {
+          queryParams.append(key, val.trim());
+        }
       });
 
       const url = `http://localhost:5000/api/students?${queryParams.toString()}`;
+      console.log('Fetching URL:', url); // Debug log
+      
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Student not found or server error');
       const data = await res.json();
-      setStudents(Array.isArray(data) ? data : [data]);
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Server error');
+      }
+      
+      setStudents(Array.isArray(data) ? data : []);
     } catch (err) {
+      console.error('Error fetching students:', err);
       setStudents([]);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Update filters and trigger search
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // Use useEffect to trigger search when filters change
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchStudents();
+    }, 500); // Wait 500ms after last filter change before searching
+
+    return () => clearTimeout(debounceTimer);
+  }, [filters]); // Trigger when filters change
 
   const formatEvents = (events, lineBreak = false) => {
     const separator = lineBreak ? '\n' : ', ';
@@ -116,7 +144,7 @@ function Overall() {
 // Row 1 headers (merged cells titles)
 worksheet.getCell('A1').value = 'Sr. No';
 worksheet.getCell('B1').value = 'Name';
-worksheet.getCell('C1').value = 'Father’s Name';
+worksheet.getCell('C1').value = "Father's Name";
 worksheet.getCell('D1').value = 'Date of Birth';
 worksheet.getCell('E1').value = 'University Reg. No';
 worksheet.getCell('F1').value = 'Present Branch/Year';
@@ -389,27 +417,77 @@ worksheet.getCell('M2').value = 'PG\n10(b)';
   }, []);
   
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedRows(students.map(student => student._id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleSelectRow = (studentId) => {
+    setSelectedRows(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  const getStudentsToExport = () => {
+    if (selectedRows.length > 0) {
+      return students.filter(student => selectedRows.includes(student._id));
+    } else if (filters.urn || filters.name || filters.branch || filters.event || filters.position) {
+      return students;
+    } else {
+      return students;
+    }
+  };
+
   return (
     <Container>
       <Paper sx={{ padding: 2 }}>
         <h2>📄 Student Records</h2>
 
         <div style={{ marginBottom: '20px' }}>
-          <input placeholder="URN" value={filters.urn} onChange={e => setFilters({ ...filters, urn: e.target.value })} style={{ marginRight: 10 }} />
-          <input placeholder="Name" value={filters.name} onChange={e => setFilters({ ...filters, name: e.target.value })} style={{ marginRight: 10 }} />
-          <input placeholder="Branch" value={filters.branch} onChange={e => setFilters({ ...filters, branch: e.target.value })} style={{ marginRight: 10 }} />
-          <input placeholder="Event" value={filters.event} onChange={e => setFilters({ ...filters, event: e.target.value })} style={{ marginRight: 10 }} />
-          <select value={filters.position} onChange={e => setFilters({ ...filters, position: e.target.value })} style={{ marginRight: 10 }}>
+          <input 
+            placeholder="URN" 
+            value={filters.urn} 
+            onChange={e => handleFilterChange('urn', e.target.value)} 
+            style={{ marginRight: 10 }} 
+          />
+          <input 
+            placeholder="Name" 
+            value={filters.name} 
+            onChange={e => handleFilterChange('name', e.target.value)} 
+            style={{ marginRight: 10 }} 
+          />
+          <input 
+            placeholder="Branch" 
+            value={filters.branch} 
+            onChange={e => handleFilterChange('branch', e.target.value)} 
+            style={{ marginRight: 10 }} 
+          />
+          <input 
+            placeholder="Event" 
+            value={filters.event} 
+            onChange={e => handleFilterChange('event', e.target.value)} 
+            style={{ marginRight: 10 }} 
+          />
+          <select 
+            value={filters.position} 
+            onChange={e => handleFilterChange('position', e.target.value)} 
+            style={{ marginRight: 10 }}
+          >
             <option value="">All Positions</option>
             <option value="1st">1st</option>
             <option value="2nd">2nd</option>
             <option value="3rd">3rd</option>
             <option value="Participated">Participated</option>
           </select>
-          <button onClick={fetchStudents}>🔍 Search</button>
-          <button onClick={()=>exportToExcel(students)} style={{ marginLeft: 10 }}>📤 Excel</button>
-          <button onClick={() => exportToWord(students)} style={{ marginLeft: 10 }}>Export to word</button>
-
+          <button onClick={() => exportToExcel(getStudentsToExport())} style={{ marginLeft: 10 }}>📤 Excel</button>
+          <button onClick={() => exportToWord(getStudentsToExport())} style={{ marginLeft: 10 }}>Export to word</button>
         </div>
 
         {loading && <p>Loading...</p>}
@@ -419,9 +497,16 @@ worksheet.getCell('M2').value = 'PG\n10(b)';
           <MuiTable sx={{ minWidth: 1400, border: '1px solid black', borderCollapse: 'collapse' }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedRows.length === students.length}
+                    indeterminate={selectedRows.length > 0 && selectedRows.length < students.length}
+                    onChange={handleSelectAll}
+                  />
+                </TableCell>
                 <TableCell rowSpan={2}>Sr. No</TableCell>
                 <TableCell rowSpan={2}>Name</TableCell>
-                <TableCell rowSpan={2}>Father’s Name</TableCell>
+                <TableCell rowSpan={2}>Father's Name</TableCell>
                 <TableCell rowSpan={2}>Date of Birth</TableCell>
                 <TableCell rowSpan={2}>University Reg. No</TableCell>
                 <TableCell rowSpan={2}>Present Branch/Year</TableCell>
@@ -462,6 +547,12 @@ worksheet.getCell('M2').value = 'PG\n10(b)';
              <TableBody>
                          {students.map((student, index) => (
                            <TableRow key={index}>
+                             <TableCell padding="checkbox">
+                               <Checkbox
+                                 checked={selectedRows.includes(student._id)}
+                                 onChange={() => handleSelectRow(student._id)}
+                               />
+                             </TableCell>
                              <TableCell>{student.srNo}</TableCell>
                              <TableCell>{student.name}</TableCell>
                              <TableCell>{student.fatherName}</TableCell>

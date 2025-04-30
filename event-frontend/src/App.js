@@ -4,6 +4,7 @@ import UploadForm from './components/Uploadform';
 import Fetch from './components/fetch'
 import Overall from './components/overall_fetch';
 import ManualEntryForm from './components/ManualEntryForm';
+import StudentUpload from './components/StudentUpload';
 function App() {
   return (
     <Router>
@@ -13,7 +14,7 @@ function App() {
           <Link to="/fetch" style={{ marginRight: '20px' }}>Fetch</Link>
           <Link to="/form" style={{ marginRight: '20px' }}>Form</Link>
           <Link to="/overall" style={{ marginRight: '20px' }}>Overall Fetch</Link>
-          
+          <Link to="/student-upload" style={{ marginRight: '20px' }}>Student Upload</Link>
         </nav>
 
         <Routes>
@@ -21,6 +22,7 @@ function App() {
           <Route path="/fetch" element={<Fetch />} />
           <Route path="/form" element={<ManualEntryForm />} />
           <Route path="/overall" element={<Overall />} />
+          <Route path="/student-upload" element={<StudentUpload />} />
         </Routes>
       </div>
     </Router>

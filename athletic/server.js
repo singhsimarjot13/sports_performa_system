@@ -2,8 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const uploadRoutes = require('./routes/uploadRoutes');
-const studentRoutes = require('./routes/studentRoutes'); // <-- add this
-
+const studentRoutes = require('./routes/studentRoutes');
+const excelRoutes = require('./routes/excel_student');
 const app = express();
 const PORT = 5000;
 
@@ -20,7 +20,8 @@ app.use(express.json());
 
 // Routes
 app.use('/', uploadRoutes);
-app.use('/api', studentRoutes); // <-- register the student route
+app.use('/api', studentRoutes);
+app.use('/api/excel', excelRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
