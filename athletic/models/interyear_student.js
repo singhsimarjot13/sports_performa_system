@@ -5,8 +5,12 @@ const studentSchema = new mongoose.Schema({
   urn: String,
   crn: String,
   email: String,
-  position: String,
-  activity: String
+  events: [
+    {
+      activity: { type: String, required: true },
+      position: { type: String, required: true }
+    }
+  ]
 });
-  
-module.exports = mongoose.model('InterYearStudent', studentSchema);
+
+module.exports = mongoose.model('InterYearStudent', interyearStudentSchema);

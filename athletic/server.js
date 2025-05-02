@@ -4,6 +4,7 @@ const cors = require('cors');
 const uploadRoutes = require('./routes/uploadRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const excelRoutes = require('./routes/excel_student');
+const interyearStudentRoutes = require('./routes/interyearStudentRoutes');
 const app = express();
 const PORT = 5000;
 
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use('/', uploadRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/excel', excelRoutes);
+app.use('/api', interyearStudentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

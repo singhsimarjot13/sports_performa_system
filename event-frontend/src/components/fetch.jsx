@@ -15,14 +15,112 @@ function Fetch() {
     setLoading(true);
     setError('');
     try {
-      const url = urn
-        ? `http://localhost:5000/api/students?urn=${urn}`
+      // Fetch regular students
+      const regularStudentsUrl = urn
+        ? `http://localhost:5000/api/students?universityRegNo=${urn}`
         : `http://localhost:5000/api/students`;
+      const regularStudentsRes = await fetch(regularStudentsUrl);
+      if (!regularStudentsRes.ok) throw new Error('Failed to fetch regular students');
+      const regularStudents = await regularStudentsRes.json();
+      console.log('Regular students:', regularStudents); // Debug log
+      const regularStudentsArray = Array.isArray(regularStudents) ? regularStudents : [regularStudents];
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Student not found or server error');
-      const data = await res.json();
-      setStudents(Array.isArray(data) ? data : [data]);
+      // Fetch interyear students
+      const interyearStudentsUrl = urn
+        ? `http://localhost:5000/api/interyear-students?urn=${urn}`
+        : `http://localhost:5000/api/interyear-students`;
+      const interyearStudentsRes = await fetch(interyearStudentsUrl);
+      if (!interyearStudentsRes.ok) throw new Error('Failed to fetch interyear students');
+      const interyearStudents = await interyearStudentsRes.json();
+      console.log('Interyear students:', interyearStudents); // Debug log
+      const interyearStudentsArray = Array.isArray(interyearStudents) ? interyearStudents : [interyearStudents];
+
+      // Create a map to store merged students
+      const mergedStudents = new Map();
+
+      // Process regular students first
+      regularStudentsArray.forEach(student => {
+        if (student.universityRegNo) {
+          mergedStudents.set(student.universityRegNo, {
+            ...student,
+            events: student.events || []
+          });
+        }
+      });
+
+      // Process interyear students
+      interyearStudentsArray.forEach(student => {
+        if (student.urn) {
+          if (mergedStudents.has(student.urn)) {
+            // If URN matches, only add position and activity to events
+            const existingStudent = mergedStudents.get(student.urn);
+            mergedStudents.set(student.urn, {
+              ...existingStudent,
+              events: [
+                ...(existingStudent.events || []),
+                {
+                  activity: student.activity,
+                  position: student.position
+                }
+              ]
+            });
+          } else {
+            // If URN doesn't match, create a new student entry
+            mergedStudents.set(student.urn, {
+              name: student.name,
+              universityRegNo: student.urn,
+              branchYear: student.branch,
+              crn: student.crn,
+              email: student.email,
+              events: [{
+                activity: student.activity,
+                position: student.position
+              }],
+              isInteryear: true
+            });
+          }
+        } else {
+          // If URN is empty, create a new entry with a temporary ID
+          const tempId = `interyear-${Math.random().toString(36).substr(2, 9)}`;
+          mergedStudents.set(tempId, {
+            name: student.name,
+            universityRegNo: 'No URN',
+            branchYear: student.branch,
+            crn: student.crn,
+            email: student.email,
+            events: [{
+              activity: student.activity,
+              position: student.position
+            }],
+            isInteryear: true
+          });
+        }
+      });
+
+      // If a specific URN was searched and no matches were found,
+      // check if there's a matching interyear student
+      if (urn && !mergedStudents.has(urn)) {
+        const matchingInteryearStudent = interyearStudentsArray.find(s => s.urn === urn);
+        if (matchingInteryearStudent) {
+          mergedStudents.set(urn, {
+            name: matchingInteryearStudent.name,
+            universityRegNo: matchingInteryearStudent.urn,
+            branchYear: matchingInteryearStudent.branch,
+            crn: matchingInteryearStudent.crn,
+            email: matchingInteryearStudent.email,
+            events: [{
+              activity: matchingInteryearStudent.activity,
+              position: matchingInteryearStudent.position
+            }],
+            isInteryear: true
+          });
+        }
+      }
+
+      // Convert Map to array
+      const finalStudents = Array.from(mergedStudents.values());
+      console.log('Final students:', finalStudents); // Debug log
+      setStudents(finalStudents);
     } catch (err) {
       setStudents([]);
       setError(err.message);
@@ -46,8 +144,8 @@ function Fetch() {
       ['Name', 'URN', 'Branch', 'Events'], // headers
       ...students.map(student => [
         student.name,
-        student.urn,
-        student.branch,
+        student.universityRegNo,
+        student.branchYear,
         formatEvents(student.events, true).replace(/\n/g, '\r\n'), // line breaks for Excel
       ]),
     ]);
@@ -103,8 +201,8 @@ function Fetch() {
         return new TableRow({
           children: [
             student.name,
-            student.urn,
-            student.branch,
+            student.universityRegNo,
+            student.branchYear,
           ].map(text =>
             new TableCell({
               width: { size: 25, type: WidthType.PERCENTAGE },
@@ -172,9 +270,9 @@ function Fetch() {
           <tbody>
             {students.map((s, idx) => (
               <tr key={idx}>
-                <td>{s.name}</td>
-                <td>{s.universityRegNo}</td>
-                <td>{s.branchYear}</td>
+                <td>{s.name || '-'}</td>
+                <td>{s.universityRegNo || '-'}</td>
+                <td>{s.branchYear || '-'}</td>
                 <td>
                   {s.events && s.events.length > 0 ? (
                     <pre>

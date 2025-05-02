@@ -12,7 +12,6 @@ function Overall() {
   const [students, setStudents] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [filters, setFilters] = useState({
-    urn: '',
     name: '',
     branch: '',
     event: '',
@@ -438,7 +437,7 @@ worksheet.getCell('M2').value = 'PG\n10(b)';
   const getStudentsToExport = () => {
     if (selectedRows.length > 0) {
       return students.filter(student => selectedRows.includes(student._id));
-    } else if (filters.urn || filters.name || filters.branch || filters.event || filters.position) {
+    } else if (filters.name || filters.branch || filters.event || filters.position) {
       return students;
     } else {
       return students;
@@ -451,12 +450,6 @@ worksheet.getCell('M2').value = 'PG\n10(b)';
         <h2>📄 Student Records</h2>
 
         <div style={{ marginBottom: '20px' }}>
-          <input 
-            placeholder="URN" 
-            value={filters.urn} 
-            onChange={e => handleFilterChange('urn', e.target.value)} 
-            style={{ marginRight: 10 }} 
-          />
           <input 
             placeholder="Name" 
             value={filters.name} 
