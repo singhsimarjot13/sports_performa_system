@@ -1,22 +1,39 @@
 const InterYearStudent = require('../models/interyear_student');
 const Student = require('../models/student');
 
-// Get student by URN
-const getStudentByUrn = async (req, res) => {
+// Get all non-matching interyear students
+const getNonMatchingStudents = async (req, res) => {
   try {
-    const { urn } = req.query;
+    const students = await InterYearStudent.find({});
+    res.json(students);
+  } catch (error) {
+    console.error('Error fetching non-matching students:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get student by URN or CRN
+const getStudentByIdentifier = async (req, res) => {
+  try {
+    const { urn, crn } = req.query;
+    const identifier = urn || crn;
+    const type = urn ? 'urn' : 'crn';
     
-    if (!urn) {
-      return res.status(400).json({ message: 'URN is required' });
+    if (!identifier) {
+      return res.status(400).json({ message: `${type.toUpperCase()} is required` });
     }
 
     // First check in regular students
-    let student = await Student.findOne({ universityRegNo: urn });
+    let student = await Student.findOne({ 
+      [type === 'urn' ? 'universityRegNo' : 'crn']: identifier 
+    });
     let isRegularStudent = true;
 
     // If not found in regular students, check in interyear students
     if (!student) {
-      student = await InterYearStudent.findOne({ urn });
+      student = await InterYearStudent.findOne({ 
+        [type]: identifier 
+      });
       isRegularStudent = false;
     }
 
@@ -31,11 +48,7 @@ const getStudentByUrn = async (req, res) => {
       branch: isRegularStudent ? student.branchYear : student.branch,
       crn: student.crn || '',
       email: student.email || '',
-      activities: isRegularStudent ? student.events : [{
-        activity: student.activity,
-        position: student.position
-      }],
-      isRegularStudent
+      events: student.events || [],
     };
 
     res.json(response);
@@ -48,11 +61,30 @@ const getStudentByUrn = async (req, res) => {
 // Add or update an interyear student
 const addInteryearStudent = async (req, res) => {
   try {
-    const { name, urn, branch, crn, email, activity, position } = req.body;
+    console.log('Received request body:', req.body); // Debug log
+    const { name, urn, branch, crn, email, events } = req.body;
 
     // Validate required fields
-    if (!name || !branch || !activity || !position) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    if (!name || !branch) {
+      return res.status(400).json({ message: 'Name and branch are required' });
+    }
+
+    // Format events according to schema
+    let formattedEvents = [];
+    if (events && Array.isArray(events)) {
+      formattedEvents = events.map(event => ({
+        activity: event.activity,
+        position: event.position
+      }));
+    }
+
+    console.log('Formatted events:', formattedEvents); // Debug log
+
+    // Validate each event
+    for (const event of formattedEvents) {
+      if (!event.activity || !event.position) {
+        return res.status(400).json({ message: 'Each event must have activity and position' });
+      }
     }
 
     // Check if student with URN exists
@@ -62,37 +94,41 @@ const addInteryearStudent = async (req, res) => {
     }
 
     if (existingStudent) {
+      console.log('Updating existing student:', existingStudent._id); // Debug log
+      
       // Update existing student
       existingStudent.name = name;
       existingStudent.branch = branch;
       existingStudent.crn = crn || existingStudent.crn;
       existingStudent.email = email || existingStudent.email;
-      existingStudent.activity = activity;
-      existingStudent.position = position;
+      existingStudent.events = formattedEvents;
 
-      await existingStudent.save();
+      const updatedStudent = await existingStudent.save();
+      console.log('Updated student:', updatedStudent); // Debug log
 
       res.status(200).json({
         message: 'Interyear student updated successfully',
-        student: existingStudent
+        student: updatedStudent
       });
     } else {
+      console.log('Creating new student'); // Debug log
+      
       // Create new interyear student
       const newStudent = new InterYearStudent({
         name,
-        urn: urn || '', // Allow empty URN
+        urn: urn || '',
         branch,
-        crn: crn || '', // Optional
-        email: email || '', // Optional
-        activity,
-        position
+        crn: crn || '',
+        email: email || '',
+        events: formattedEvents
       });
 
-      await newStudent.save();
+      const savedStudent = await newStudent.save();
+      console.log('Saved student:', savedStudent); // Debug log
 
       res.status(201).json({
         message: 'Interyear student added successfully',
-        student: newStudent
+        student: savedStudent
       });
     }
   } catch (error) {
@@ -102,6 +138,7 @@ const addInteryearStudent = async (req, res) => {
 };
 
 module.exports = {
-  addInteryearStudent,
-  getStudentByUrn
+  getNonMatchingStudents,
+  getStudentByIdentifier,
+  addInteryearStudent
 }; 

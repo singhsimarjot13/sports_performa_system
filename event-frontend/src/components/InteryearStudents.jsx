@@ -3,7 +3,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, Paper, 
   Typography, Tabs, Tab, Box, TextField, Button, Dialog,
   DialogTitle, DialogContent, DialogActions, FormControl,
-  InputLabel, Select, MenuItem, Grid
+  InputLabel, Select, MenuItem, Grid, Chip, Stack
 } from '@mui/material';
 
 function InteryearStudents() {
@@ -26,12 +26,14 @@ function InteryearStudents() {
       const nonMatchingResponse = await fetch('http://localhost:5000/api/interyear-students/non-matching');
       if (!nonMatchingResponse.ok) throw new Error('Failed to fetch non-matching students');
       const nonMatchingData = await nonMatchingResponse.json();
+      console.log('Non-matching students data:', nonMatchingData);
       setNonMatchingStudents(Array.isArray(nonMatchingData) ? nonMatchingData : [nonMatchingData]);
 
       // Fetch null URN students
       const nullUrnResponse = await fetch('http://localhost:5000/api/students/null-urn');
       if (!nullUrnResponse.ok) throw new Error('Failed to fetch null URN students');
       const nullUrnData = await nullUrnResponse.json();
+      console.log('Null URN students data:', nullUrnData);
       setNullUrnStudents(Array.isArray(nullUrnData) ? nullUrnData : [nullUrnData]);
     } catch (err) {
       setError(err.message);
@@ -97,34 +99,50 @@ function InteryearStudents() {
             <TableCell>Branch</TableCell>
             <TableCell>CRN</TableCell>
             <TableCell>Email</TableCell>
-            <TableCell>Position</TableCell>
-            <TableCell>Activity</TableCell>
+            <TableCell>Events</TableCell>
             {isNullUrn && <TableCell>Action</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
-          {students.map((student, index) => (
-            <TableRow key={index}>
-              <TableCell>{student.name}</TableCell>
-              <TableCell>{student.urn || student.universityRegNo}</TableCell>
-              <TableCell>{student.branch || student.branchYear}</TableCell>
-              <TableCell>{student.crn || '-'}</TableCell>
-              <TableCell>{student.email || '-'}</TableCell>
-              <TableCell>{student.position}</TableCell>
-              <TableCell>{student.activity}</TableCell>
-              {isNullUrn && (
+          {students.map((student, index) => {
+            console.log('Rendering student:', student);
+            return (
+              <TableRow key={index}>
+                <TableCell>{student.name}</TableCell>
+                <TableCell>{student.urn || student.universityRegNo}</TableCell>
+                <TableCell>{student.branch || student.branchYear}</TableCell>
+                <TableCell>{student.crn || '-'}</TableCell>
+                <TableCell>{student.email || '-'}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={() => handleOpenDialog(student)}
-                  >
-                    Update URN
-                  </Button>
+                  {student.events && student.events.length > 0 ? (
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {student.events.map((event, idx) => (
+                        <Chip
+                          key={idx}
+                          label={`${event.position} in ${event.activity}`}
+                          size="small"
+                          sx={{ m: 0.5 }}
+                        />
+                      ))}
+                    </Stack>
+                  ) : (
+                    '-'
+                  )}
                 </TableCell>
-              )}
-            </TableRow>
-          ))}
+                {isNullUrn && (
+                  <TableCell>
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      onClick={() => handleOpenDialog(student)}
+                    >
+                      Update URN
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </Paper>

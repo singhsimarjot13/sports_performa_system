@@ -72,8 +72,8 @@ function InteryearManualEntry() {
     }));
   };
 
-  const fetchStudentData = async (urn) => {
-    if (!urn) {
+  const fetchStudentData = async (identifier, type) => {
+    if (!identifier) {
       setIsExistingStudent(false);
       setFormData(prev => ({
         ...prev,
@@ -84,7 +84,7 @@ function InteryearManualEntry() {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/interyear-students/by-urn?urn=${urn}`);
+      const response = await fetch(`http://localhost:5000/api/interyear-students/by-${type}?${type}=${identifier}`);
       if (!response.ok) {
         setIsExistingStudent(false);
         setFormData(prev => ({
@@ -94,24 +94,25 @@ function InteryearManualEntry() {
         return;
       }
       const data = await response.json();
+      console.log('Fetched student data:', data); // Debug log
       
-      // If student exists, fetch all their activities
-      const allActivitiesResponse = await fetch(`http://localhost:5000/api/interyear-students?urn=${urn}`);
-      const allActivitiesData = await allActivitiesResponse.json();
-      
-      const activities = Array.isArray(allActivitiesData) 
-        ? allActivitiesData.map(student => ({
-            activity: student.activity,
-            position: student.position
+      // Format activities from events array
+      const activities = data.events && Array.isArray(data.events) 
+        ? data.events.map(event => ({
+            activity: event.activity,
+            position: event.position
           }))
-        : [{ activity: data.activity, position: data.position }];
+        : [{ activity: '', position: '' }];
+
+      console.log('Formatted activities:', activities); // Debug log
 
       setFormData(prev => ({
         ...prev,
-        name: data.name,
-        branch: data.branch,
+        name: data.name || '',
+        branch: data.branch || '',
         crn: data.crn || '',
         email: data.email || '',
+        urn: data.urn || '',
         activities: activities
       }));
       setIsExistingStudent(true);
@@ -129,11 +130,15 @@ function InteryearManualEntry() {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      fetchStudentData(formData.urn);
+      if (formData.urn) {
+        fetchStudentData(formData.urn, 'urn');
+      } else if (formData.crn) {
+        fetchStudentData(formData.crn, 'crn');
+      }
     }, 500);
 
     return () => clearTimeout(debounceTimer);
-  }, [formData.urn]);
+  }, [formData.urn, formData.crn]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -150,8 +155,10 @@ function InteryearManualEntry() {
           },
           body: JSON.stringify({
             ...formData,
-            activity: formData.activities[0].activity,
-            position: formData.activities[0].position
+            events: formData.activities.map(activity => ({
+              activity: activity.activity,
+              position: activity.position
+            }))
           }),
         });
 
@@ -161,7 +168,7 @@ function InteryearManualEntry() {
 
         setMessage('Student updated successfully');
       } else {
-        // For new students, submit with first activity
+        // For new students, submit with all activities
         const response = await fetch('http://localhost:5000/api/interyear-students', {
           method: 'POST',
           headers: {
@@ -169,8 +176,10 @@ function InteryearManualEntry() {
           },
           body: JSON.stringify({
             ...formData,
-            activity: formData.activities[0].activity,
-            position: formData.activities[0].position
+            events: formData.activities.map(activity => ({
+              activity: activity.activity,
+              position: activity.position
+            }))
           }),
         });
 
@@ -249,6 +258,7 @@ function InteryearManualEntry() {
                 value={formData.crn}
                 onChange={handleChange}
                 margin="normal"
+                helperText="Enter CRN to auto-fill student details"
               />
             </Grid>
             <Grid item xs={12} md={6}>

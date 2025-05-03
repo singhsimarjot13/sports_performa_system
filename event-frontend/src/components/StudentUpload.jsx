@@ -21,12 +21,31 @@ function StudentUpload() {
       alert("Failed to upload and parse file.");
     }
   };
+
+  const formatStudentData = (student) => {
+    return {
+      name: student.name,
+      branch: student.branch,
+      urn: student.urn || '',
+      crn: student.crn || '',
+      email: student.email || '',
+      events: student.activity && student.position ? [{
+        activity: student.activity,
+        position: student.position
+      }] : []
+    };
+  };
+
   const handleSubmit = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/api/excel/submit', students);
+      // Format the data before sending
+      const formattedStudents = students.map(formatStudentData);
+      console.log('Formatted students data:', formattedStudents); // Debug log
+
+      const res = await axios.post('http://localhost:5000/api/excel/submit', formattedStudents);
       alert(`Successfully submitted ${res.data.savedCount} students.`);
     } catch (error) {
-      console.error(error);
+      console.error('Error submitting data:', error);
       alert("Failed to submit data.");
     }
   };
@@ -69,8 +88,6 @@ function StudentUpload() {
           <button onClick={handleSubmit} style={{ marginTop: 20 }}>Submit to DB</button>
         </>
       )}
-
-
     </div>
   );
 }

@@ -52,16 +52,13 @@ function Fetch() {
       interyearStudentsArray.forEach(student => {
         if (student.urn) {
           if (mergedStudents.has(student.urn)) {
-            // If URN matches, only add position and activity to events
+            // If URN matches, merge events
             const existingStudent = mergedStudents.get(student.urn);
             mergedStudents.set(student.urn, {
               ...existingStudent,
               events: [
                 ...(existingStudent.events || []),
-                {
-                  activity: student.activity,
-                  position: student.position
-                }
+                ...(student.events || [])
               ]
             });
           } else {
@@ -72,10 +69,7 @@ function Fetch() {
               branchYear: student.branch,
               crn: student.crn,
               email: student.email,
-              events: [{
-                activity: student.activity,
-                position: student.position
-              }],
+              events: student.events || [],
               isInteryear: true
             });
           }
@@ -88,10 +82,7 @@ function Fetch() {
             branchYear: student.branch,
             crn: student.crn,
             email: student.email,
-            events: [{
-              activity: student.activity,
-              position: student.position
-            }],
+            events: student.events || [],
             isInteryear: true
           });
         }
@@ -108,10 +99,7 @@ function Fetch() {
             branchYear: matchingInteryearStudent.branch,
             crn: matchingInteryearStudent.crn,
             email: matchingInteryearStudent.email,
-            events: [{
-              activity: matchingInteryearStudent.activity,
-              position: matchingInteryearStudent.position
-            }],
+            events: matchingInteryearStudent.events || [],
             isInteryear: true
           });
         }

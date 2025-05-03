@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const studentSchema = new mongoose.Schema({
+const interyearStudentSchema = new mongoose.Schema({
   name: String,
   branch: String,
   urn: String,
