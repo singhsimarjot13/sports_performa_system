@@ -17,7 +17,8 @@ import {
   Alert,
   Box,
   TextField,
-  Grid
+  Grid,
+  Checkbox
 } from '@mui/material';
 
 const POSITION_OPTIONS = [
@@ -35,6 +36,7 @@ function PendingPositions() {
   const [selectedPosition, setSelectedPosition] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('name'); // 'name' or 'urn'
+  const [selectedStudents, setSelectedStudents] = useState([]);
 
   const fetchPendingStudents = async () => {
     setLoading(true);
@@ -99,6 +101,74 @@ function PendingPositions() {
     }
   });
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      const allStudents = filteredStudents.flatMap(student => 
+        student.events
+          .filter(event => event.position === 'Pending')
+          .map(event => ({
+            studentId: student._id,
+            activity: event.activity,
+            isInteryear: !student.universityRegNo
+          }))
+      );
+      setSelectedStudents(allStudents);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleSelectStudent = (studentId, activity, isInteryear) => {
+    const studentKey = `${studentId}-${activity}`;
+    setSelectedStudents(prev => {
+      const exists = prev.some(s => s.studentId === studentId && s.activity === activity);
+      if (exists) {
+        return prev.filter(s => !(s.studentId === studentId && s.activity === activity));
+      } else {
+        return [...prev, { studentId, activity, isInteryear }];
+      }
+    });
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!selectedPosition) {
+      setError('Please select a position first');
+      return;
+    }
+
+    if (selectedStudents.length === 0) {
+      setError('Please select at least one student');
+      return;
+    }
+
+    try {
+      const updatePromises = selectedStudents.map(student => {
+        const endpoint = student.isInteryear 
+          ? `http://localhost:5000/api/interyear-students/${student.studentId}/update-position`
+          : `http://localhost:5000/api/students/${student.studentId}/update-position`;
+
+        return fetch(endpoint, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            activity: student.activity,
+            position: selectedPosition
+          }),
+        });
+      });
+
+      await Promise.all(updatePromises);
+      setMessage('Positions updated successfully');
+      setSelectedPosition('');
+      setSelectedStudents([]);
+      fetchPendingStudents();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Paper sx={{ p: 3, mt: 3 }}>
@@ -134,17 +204,47 @@ function PendingPositions() {
           </Grid>
         </Grid>
 
+        <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Position</InputLabel>
+            <Select
+              value={selectedPosition}
+              onChange={(e) => setSelectedPosition(e.target.value)}
+              label="Position"
+            >
+              {POSITION_OPTIONS.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            onClick={handleBulkUpdate}
+            disabled={!selectedPosition || selectedStudents.length === 0}
+          >
+            Update Selected ({selectedStudents.length})
+          </Button>
+        </Box>
+
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    onChange={handleSelectAll}
+                    checked={selectedStudents.length > 0 && selectedStudents.length === filteredStudents.flatMap(s => s.events.filter(e => e.position === 'Pending')).length}
+                    indeterminate={selectedStudents.length > 0 && selectedStudents.length < filteredStudents.flatMap(s => s.events.filter(e => e.position === 'Pending')).length}
+                  />
+                </TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>URN</TableCell>
                 <TableCell>CRN</TableCell>
                 <TableCell>Branch</TableCell>
                 <TableCell>Activity</TableCell>
                 <TableCell>Current Position</TableCell>
-                <TableCell>Update Position</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -153,42 +253,18 @@ function PendingPositions() {
                   .filter(event => event.position === 'Pending')
                   .map((event, eventIndex) => (
                     <TableRow key={`${index}-${eventIndex}`}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedStudents.some(s => s.studentId === student._id && s.activity === event.activity)}
+                          onChange={() => handleSelectStudent(student._id, event.activity, !student.universityRegNo)}
+                        />
+                      </TableCell>
                       <TableCell>{student.name}</TableCell>
                       <TableCell>{student.urn || student.universityRegNo}</TableCell>
                       <TableCell>{student.crn}</TableCell>
                       <TableCell>{student.branch || student.branchYear}</TableCell>
                       <TableCell>{event.activity}</TableCell>
                       <TableCell>{event.position}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <FormControl size="small" sx={{ minWidth: 120 }}>
-                            <InputLabel>Position</InputLabel>
-                            <Select
-                              value={selectedPosition}
-                              onChange={(e) => setSelectedPosition(e.target.value)}
-                              label="Position"
-                            >
-                              {POSITION_OPTIONS.map(option => (
-                                <MenuItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handlePositionUpdate(
-                              student._id,
-                              event.activity,
-                              !student.universityRegNo
-                            )}
-                            disabled={!selectedPosition}
-                          >
-                            Update
-                          </Button>
-                        </Box>
-                      </TableCell>
                     </TableRow>
                   ))
               ))}

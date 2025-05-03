@@ -8,6 +8,7 @@ import StudentUpload from './components/StudentUpload';
 import InteryearStudents from './components/InteryearStudents';
 import InteryearManualEntry from './components/InteryearManualEntry';
 import PendingPositions from './components/PendingPositions';
+import BulkActivityAssignment from './components/BulkActivityAssignment';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Link to="/interyear-students" style={{ marginRight: '20px' }}>Interyear Students</Link>
           <Link to="/interyear-manual" style={{ marginRight: '20px' }}>Interyear Manual Entry</Link>
           <Link to="/pending-positions" style={{ marginRight: '20px' }}>Pending Positions</Link>
+          <Link to="/bulk-activity" style={{ marginRight: '20px' }}>Bulk Activity</Link>
         </nav>
 
         <Routes>
@@ -33,6 +35,7 @@ function App() {
           <Route path="/interyear-students" element={<InteryearStudents />} />
           <Route path="/interyear-manual" element={<InteryearManualEntry />} />
           <Route path="/pending-positions" element={<PendingPositions />} />
+          <Route path="/bulk-activity" element={<BulkActivityAssignment />} />
         </Routes>
       </div>
     </Router>

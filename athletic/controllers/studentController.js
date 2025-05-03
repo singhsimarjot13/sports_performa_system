@@ -3,7 +3,7 @@ const Student = require('../models/student');
 // Get all students
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await Student.find();
+    const students = await Student.find().select('name universityRegNo branchYear crn email events _id');
     res.json(students);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

@@ -84,17 +84,32 @@ function InteryearManualEntry() {
     
     setIsLoading(true);
     try {
+      // Only fetch from interyear-students endpoint
       const response = await fetch(`http://localhost:5000/api/interyear-students/by-${type}?${type}=${identifier}`);
-      if (!response.ok) {
+      
+      // If student not found in interyear model, reset form
+      if (!response.ok || response.status === 404) {
         setIsExistingStudent(false);
         setFormData(prev => ({
           ...prev,
+          name: prev.name,
+          urn: prev.urn,
+          branch: prev.branch,
+          crn: prev.crn,
+          email: prev.email,
           activities: [{ activity: '', position: '' }]
         }));
         return;
       }
+
       const data = await response.json();
-      console.log('Fetched student data:', data); // Debug log
+      console.log('Fetched interyear student data:', data); // Debug log
+      
+      // Only proceed if we got valid data from interyear model
+      if (!data || !data.urn) {
+        setIsExistingStudent(false);
+        return;
+      }
       
       // Format activities from events array
       const activities = data.events && Array.isArray(data.events) 
@@ -117,7 +132,7 @@ function InteryearManualEntry() {
       }));
       setIsExistingStudent(true);
     } catch (err) {
-      console.error('Error fetching student:', err);
+      console.error('Error fetching interyear student:', err);
       setIsExistingStudent(false);
       setFormData(prev => ({
         ...prev,
@@ -148,13 +163,14 @@ function InteryearManualEntry() {
     try {
       // For existing students, update with new activities
       if (isExistingStudent) {
-        const response = await fetch('http://localhost:5000/api/interyear-students', {
-          method: 'POST',
+        const response = await fetch(`http://localhost:5000/api/interyear-students`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ...formData,
+            urn: formData.urn,
+            crn: formData.crn,
             events: formData.activities.map(activity => ({
               activity: activity.activity,
               position: activity.position

@@ -64,16 +64,13 @@ function InteryearStudents() {
 
   const handleUpdateUrn = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/students/update-urn`, {
+      const response = await fetch(`http://localhost:5000/api/interyear-students/${selectedStudent._id}/update-urn`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          studentId: selectedStudent._id,
-          newUrn,
-          filterType,
-          filterValue
+          urn: newUrn
         }),
       });
 
@@ -178,31 +175,30 @@ function InteryearStudents() {
         )
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Update URN</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Update URN for {selectedStudent?.name}
+        </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Filter By</InputLabel>
-                <Select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  label="Filter By"
-                >
-                  <MenuItem value="crn">CRN</MenuItem>
-                  <MenuItem value="name">Name</MenuItem>
-                  <MenuItem value="branch">Branch</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Filter Value"
-                value={filterValue}
-                onChange={(e) => setFilterValue(e.target.value)}
-              />
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Current Details:
+              </Typography>
+              <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                <Typography variant="body2">
+                  <strong>Name:</strong> {selectedStudent?.name}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Current URN:</strong> {selectedStudent?.urn || 'Not set'}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Branch:</strong> {selectedStudent?.branch}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>CRN:</strong> {selectedStudent?.crn}
+                </Typography>
+              </Box>
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -210,14 +206,23 @@ function InteryearStudents() {
                 label="New URN"
                 value={newUrn}
                 onChange={(e) => setNewUrn(e.target.value)}
+                error={!newUrn}
+                helperText={!newUrn ? "URN is required" : ""}
+                required
+                autoFocus
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleUpdateUrn} variant="contained" color="primary">
-            Update
+          <Button 
+            onClick={handleUpdateUrn} 
+            variant="contained" 
+            color="primary"
+            disabled={!newUrn}
+          >
+            Update URN
           </Button>
         </DialogActions>
       </Dialog>

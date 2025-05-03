@@ -23,37 +23,28 @@ const getStudentByIdentifier = async (req, res) => {
       return res.status(400).json({ message: `${type.toUpperCase()} is required` });
     }
 
-    // First check in regular students
-    let student = await Student.findOne({ 
-      [type === 'urn' ? 'universityRegNo' : 'crn']: identifier 
+    // Only check in interyear students
+    const student = await InterYearStudent.findOne({ 
+      [type]: identifier 
     });
-    let isRegularStudent = true;
-
-    // If not found in regular students, check in interyear students
-    if (!student) {
-      student = await InterYearStudent.findOne({ 
-        [type]: identifier 
-      });
-      isRegularStudent = false;
-    }
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: 'Student not found in interyear records' });
     }
 
-    // Format the response based on student type
+    // Format the response
     const response = {
       name: student.name,
-      urn: isRegularStudent ? student.universityRegNo : student.urn,
-      branch: isRegularStudent ? student.branchYear : student.branch,
-      crn: student.crn || '',
-      email: student.email || '',
+      urn: student.urn,
+      branch: student.branch,
+      crn: student.crn,
+      email: student.email,
       events: student.events || [],
     };
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching student:', error);
+    console.error('Error fetching interyear student:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
