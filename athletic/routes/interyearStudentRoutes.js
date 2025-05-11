@@ -152,6 +152,40 @@ router.get('/interyear-students', async (req, res) => {
 // Get student by URN or CRN
 router.get('/interyear-students/by-:type', interyearStudentController.getStudentByIdentifier);
 
+// Update student by URN
+router.put('/interyear-students/by-urn', async (req, res) => {
+  try {
+    const { urn } = req.query;
+    if (!urn) {
+      return res.status(400).json({ message: 'URN is required' });
+    }
+
+    const student = await InterYearStudent.findOne({ urn });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Update student fields
+    const { name, branch, crn, email, events } = req.body;
+    if (name) student.name = name;
+    if (branch) student.branch = branch;
+    if (crn) student.crn = crn;
+    if (email) student.email = email;
+    if (events && Array.isArray(events)) {
+      student.events = events.map(event => ({
+        activity: event.activity,
+        position: event.position
+      }));
+    }
+
+    await student.save();
+    res.json({ message: 'Student updated successfully', student });
+  } catch (error) {
+    console.error('Error updating student:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Add a new interyear student
 router.post('/interyear-students', interyearStudentController.addInteryearStudent);
 

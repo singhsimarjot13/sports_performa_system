@@ -21,11 +21,30 @@ const previewDocx = async (req, res) => {
     fs.unlinkSync(filePath);
 
     const html = result.value;
-    const matches = Array.from(html.matchAll(/<tr>(.*?)<\/tr>/g));
+    const matches = Array.from(html.matchAll(/<tr[^>]*>(.*?)<\/tr>/gs));
+
 
     const students = [];
+const isLikelyHeader = (cells) => {
+  const keywords = [
+    "sr. no", "name", "father", "date of birth", "university", "branch",
+    "matric", "+2 exam", "admission", "examination", "graduate",
+    "pg course", "varsity", "signature", "passport", "home address"
+  ];
 
-    for (let i = 2; i < matches.length; i++) {
+  // Count keyword matches
+  let matchCount = cells.reduce((count, cell) => {
+    const lower = cell.toLowerCase();
+    return count + (keywords.some(keyword => lower.includes(keyword)) ? 1 : 0);
+  }, 0);
+
+  const hasTooFewData = cells.length < 5;
+  const isMostlyKeywords = matchCount >= 4;
+
+  return isMostlyKeywords || hasTooFewData;
+};
+
+    for (let i = 0; i < matches.length; i++) {
       const row = matches[i][1];
 
       const cellTags = Array.from(row.matchAll(/<t[hd][^>]*>(.*?)<\/t[hd]>/g));
@@ -38,15 +57,16 @@ const previewDocx = async (req, res) => {
           .trim()
       );
 
-      const isLikelyHeader = cells.some((cell) =>
-        [
-          "sr. no", "name", "father", "date of birth", "university", "branch", "matric",
-          "+2 exam", "admission", "examination", "graduate", "pg course", "varsity",
-          "signature", "passport", "home address"
-        ].some((keyword) => cell.toLowerCase().includes(keyword))
-      );
 
-      if (isLikelyHeader || cells.length < 5) continue;
+
+
+if (isLikelyHeader(cells)) {
+  console.log("Skipped Likely Header Row:", cells);
+  continue;
+}
+
+        const hasCoreInfo = cells[1] && cells[4]; // name and university reg no
+  if (!hasCoreInfo) continue;
 
       let signatureUrl = "";
       let passportPhotoUrl = "";
@@ -64,7 +84,7 @@ const previewDocx = async (req, res) => {
 
         const uploadedUrl = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
-            { folder: "students" },
+            { folder: "gndecsports" },
             (error, result) => {
               if (error) reject(error);
               else resolve(result.secure_url);
@@ -79,18 +99,27 @@ const previewDocx = async (req, res) => {
       // 👇 Assign images by order: passport photo first, then signature
       signatureUrl = imageUrls[0] || "";
       passportPhotoUrl = imageUrls[1] || "";
-
+      for (let i = 0; i < matches.length; i++) {
+  console.log(`Row ${i + 1} → ${JSON.stringify(cells)}`);
+}
+if (imageUrls.length === 0) {
+  console.log("No images in row:", i, cells);
+}
+if (cells.every((cell) => cell === "")) {
+  console.log("Skipped Empty Row:", cells);
+  continue;
+}
 
       // 🧪 Optional Debug (Can remove later)
       console.log(`Row ${i - 1} → Passport: ${passportPhotoUrl}, Signature: ${signatureUrl}`);
-      
+
 
       students.push({
-        srNo: i - 1,
+        srNo: i +1,
         name: cells[1] || "",
         fatherName: cells[2] || "",
-        dob: cells[3] || "",
-        universityRegNo: cells[4] || "",
+        dob: cells[3] || "pending",
+        universityRegNo: cells[4] || "A.F",
         branchYear: cells[5] || "",
         matricYear: cells[6] || "",
         plusTwoYear: cells[7] || "",
@@ -107,7 +136,9 @@ const previewDocx = async (req, res) => {
         position: req.body.position,
       });
     }
-
+     fs.unlink(filePath, (err) => {
+      if (err) console.error('Failed to delete file:', err);
+    });
     res.status(200).json({ students });
   } catch (err) {
     console.error("Preview error:", err);

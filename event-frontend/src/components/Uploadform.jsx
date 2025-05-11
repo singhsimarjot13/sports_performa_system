@@ -11,6 +11,9 @@ import {
   Container,
   Typography,
   Paper,
+  FormControlLabel,
+  Checkbox,
+  Box,
 } from "@mui/material";
 
 function UploadForm() {
@@ -20,6 +23,7 @@ function UploadForm() {
   const [students, setStudents] = useState([]);
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isPTUTournament, setIsPTUTournament] = useState(false);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -33,7 +37,8 @@ function UploadForm() {
 
     const formData = new FormData();
     formData.append("docfile", file);
-    formData.append("activity", event);
+    const activityName = isPTUTournament ? `PTU intercollege ${event} tournament` : event;
+    formData.append("activity", activityName);
     formData.append("position", position);
 
     try {
@@ -68,12 +73,24 @@ function UploadForm() {
       <br />
       <br />
 
-      <TextField
-        label="Event Name"
-        value={event}
-        onChange={(e) => setEvent(e.target.value)}
-        sx={{ mr: 2 }}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <TextField
+          label="Event Name"
+          value={event}
+          onChange={(e) => setEvent(e.target.value)}
+          sx={{ mr: 2 }}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={isPTUTournament}
+              onChange={(e) => setIsPTUTournament(e.target.checked)}
+            />
+          }
+          label="PTU Intercollege Tournament"
+        />
+      </Box>
+
       <TextField
         select
         SelectProps={{ native: true }}

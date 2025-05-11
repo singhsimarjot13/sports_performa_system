@@ -17,7 +17,9 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -41,7 +43,7 @@ function ManualEntryForm() {
     addressWithPhone: '',
     signatureUrl: '',
     passportPhotoUrl: '',
-    activities: [{ activity: '', position: '' }]
+    activities: [{ activity: '', position: '', isPTUTournament: false }]
   });
 
   const [previewData, setPreviewData] = useState(null);
@@ -78,7 +80,7 @@ function ManualEntryForm() {
   const addActivity = () => {
     setFormData(prev => ({
       ...prev,
-      activities: [...prev.activities, { activity: '', position: '' }]
+      activities: [...prev.activities, { activity: '', position: '', isPTUTournament: false }]
     }));
   };
 
@@ -205,9 +207,9 @@ function ManualEntryForm() {
       const checkRes = await fetch(`http://localhost:5000/api/by-urn?urn=${formData.universityRegNo}`);
       const checkData = await checkRes.json();
       
-      // Convert activities to events format
+      // Convert activities to events format with PTU tournament formatting
       const events = formData.activities.map(activity => ({
-        activity: activity.activity,
+        activity: activity.isPTUTournament ? `PTU intercollege ${activity.activity} tournament` : activity.activity,
         position: activity.position
       }));
 
@@ -258,7 +260,7 @@ function ManualEntryForm() {
         addressWithPhone: '',
         signatureUrl: '',
         passportPhotoUrl: '',
-        activities: [{ activity: '', position: '' }]
+        activities: [{ activity: '', position: '', isPTUTournament: false }]
       });
       setPreviewData(null);
       setSignaturePreview(null);
@@ -424,44 +426,40 @@ function ManualEntryForm() {
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>Activities</Typography>
             {formData.activities.map((activity, index) => (
-              <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
-                <Grid item xs={12} md={5}>
-                  <TextField
-                    fullWidth
-                    label="Activity"
-                    value={activity.activity}
-                    onChange={(e) => handleActivityChange(index, 'activity', e.target.value)}
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item xs={12} md={5}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Position</InputLabel>
-                    <Select
-                      value={activity.position}
-                      label="Position"
-                      onChange={(e) => handleActivityChange(index, 'position', e.target.value)}
-                    >
-                      {positionOptions.map((option) => (
-                        <MenuItem key={option} value={option}>
-                          {option}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center' }}>
-                  {index === formData.activities.length - 1 ? (
-                    <IconButton onClick={addActivity} color="primary">
-                      <AddIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton onClick={() => removeActivity(index)} color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                </Grid>
-              </Grid>
+              <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+                <TextField
+                  label="Activity"
+                  value={activity.activity}
+                  onChange={(e) => handleActivityChange(index, 'activity', e.target.value)}
+                  sx={{ flexGrow: 1 }}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={activity.isPTUTournament}
+                      onChange={(e) => handleActivityChange(index, 'isPTUTournament', e.target.checked)}
+                    />
+                  }
+                  label="PTU Intercollege Tournament"
+                />
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Position</InputLabel>
+                  <Select
+                    value={activity.position}
+                    onChange={(e) => handleActivityChange(index, 'position', e.target.value)}
+                    label="Position"
+                  >
+                    {positionOptions.map(option => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <IconButton onClick={() => removeActivity(index)} color="error">
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
             ))}
           </Grid>
           <Grid item xs={12} md={6}>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import './App.css';
 import UploadForm from './components/Uploadform';
-import Fetch from './components/fetch'
+import Fetch from './components/fetch';
 import Overall from './components/overall_fetch';
 import ManualEntryForm from './components/ManualEntryForm';
 import StudentUpload from './components/StudentUpload';
@@ -10,23 +11,39 @@ import InteryearManualEntry from './components/InteryearManualEntry';
 import PendingPositions from './components/PendingPositions';
 import BulkActivityAssignment from './components/BulkActivityAssignment';
 
-function App() {
-  return (
-    <Router>
-      <div style={{ padding: '20px' }}>
-        <nav>
-          <Link to="/" style={{ marginRight: '20px' }}>Upload</Link>
-          <Link to="/fetch" style={{ marginRight: '20px' }}>Fetch</Link>
-          <Link to="/form" style={{ marginRight: '20px' }}>Form</Link>
-          <Link to="/overall" style={{ marginRight: '20px' }}>Overall Fetch</Link>
-          <Link to="/student-upload" style={{ marginRight: '20px' }}>Student Upload</Link>
-          <Link to="/interyear-students" style={{ marginRight: '20px' }}>Interyear Students</Link>
-          <Link to="/interyear-manual" style={{ marginRight: '20px' }}>Interyear Manual Entry</Link>
-          <Link to="/pending-positions" style={{ marginRight: '20px' }}>Pending Positions</Link>
-          <Link to="/bulk-activity" style={{ marginRight: '20px' }}>Bulk Activity</Link>
-        </nav>
+const navLinks = [
+  { to: '/', label: 'Upload' },
+  { to: '/fetch', label: 'Fetch' },
+  { to: '/form', label: 'Form' },
+  { to: '/overall', label: 'Overall' },
+  { to: '/student-upload', label: 'Student Upload' },
+  { to: '/interyear-students', label: 'Interyear Students' },
+  { to: '/interyear-manual', label: 'Interyear Manual Entry' },
+  { to: '/pending-positions', label: 'Pending Positions' },
+  { to: '/bulk-activity', label: 'Bulk Activity' },
+];
 
-        <Routes>
+function App() {
+  const location = useLocation();
+  return (
+    <div>
+      <nav className="app-nav">
+        <div className="app-nav-inner">
+          {navLinks.map(link => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={
+                'app-nav-link' + (location.pathname === link.to ? ' active' : '')
+              }
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+      <main className="app-main">
+        <Routes location={location} key={location.pathname}>
           <Route path="/" element={<UploadForm />} />
           <Route path="/fetch" element={<Fetch />} />
           <Route path="/form" element={<ManualEntryForm />} />
@@ -37,9 +54,15 @@ function App() {
           <Route path="/pending-positions" element={<PendingPositions />} />
           <Route path="/bulk-activity" element={<BulkActivityAssignment />} />
         </Routes>
-      </div>
-    </Router>
+      </main>
+    </div>
   );
 }
 
-export default App;
+const AppWithRouter = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default AppWithRouter;

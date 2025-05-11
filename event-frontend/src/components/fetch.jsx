@@ -5,6 +5,73 @@ import * as XLSX from 'sheetjs-style';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun } from 'docx';
 
+// Add marks calculation function
+const calculateMarks = (events) => {
+  if (!events || events.length === 0) return 0;
+  
+  let totalMarks = 0;
+  let hasUnmatchedEvents = false;
+
+  events.forEach(event => {
+    if (!event || !event.activity || !event.position) return;
+
+    const activity = event.activity.toLowerCase().trim();
+    const position = event.position.toLowerCase().trim();
+    let eventMatched = false;
+
+    console.log('Processing event:', {
+      activity,
+      position,
+      hasHostel: activity.includes('hostel'),
+      hasPTU: activity.includes('ptu'),
+      hasIntercollege: activity.includes('intercollege'),
+      hasGNE: activity.includes('gne'),
+      hasInterYr: activity.includes('inter-yr'),
+      hasCrossCountry: activity.includes('cross-country') || activity.includes('cross country')
+    });
+
+    // PTU Intercollege tournament scoring
+    if (activity.includes('ptu') && activity.includes('intercollege')) {
+      eventMatched = true;
+      if (position === '1st' || position === '2nd') {
+        totalMarks += 50;
+      } else if (position === '3rd') {
+        totalMarks += 49;
+      } else if (position === 'participated') {
+        totalMarks += 48;
+      }
+    }
+    // GNE inter-yr, cross-country, or hostel events scoring
+    else if (
+      (activity.includes('gne') && activity.includes('inter-yr')) || 
+      activity.includes('cross-country') || 
+      activity.includes('cross country') ||
+      activity.includes('hostel')
+    ) {
+      eventMatched = true;
+      if (position === '1st') {
+        totalMarks += 40;
+      } else if (position === '2nd') {
+        totalMarks += 37;
+      } else if (position === '3rd') {
+        totalMarks += 35;
+      } else if (position === 'participated') {
+        totalMarks += 25;
+      }
+    }
+
+    if (!eventMatched) {
+      console.log('Event not matched:', activity);
+      hasUnmatchedEvents = true;
+    } else {
+      console.log('Event matched:', activity);
+    }
+  });
+  
+  // Only return "Not Determined" if there are unmatched events AND no matched events
+  return (hasUnmatchedEvents && totalMarks === 0) ? "Not Determined" : totalMarks;
+};
+
 function Fetch() {
   const [students, setStudents] = useState([]);
   const [urn, setUrn] = useState('');
@@ -129,12 +196,13 @@ function Fetch() {
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.aoa_to_sheet([
-      ['Name', 'URN', 'Branch', 'Events'], // headers
+      ['Name', 'URN', 'Branch', 'Events', 'Total Marks'], // headers
       ...students.map(student => [
         student.name,
         student.universityRegNo,
         student.branchYear,
         formatEvents(student.events, true).replace(/\n/g, '\r\n'), // line breaks for Excel
+        calculateMarks(student.events)
       ]),
     ]);
   
@@ -154,6 +222,7 @@ function Fetch() {
       { wch: 20 },
       { wch: 20 },
       { wch: 50 },
+      { wch: 15 },
     ];
   
     const workbook = XLSX.utils.book_new();
@@ -174,9 +243,9 @@ function Fetch() {
   const exportToWord = async () => {
     const tableRows = [
       new TableRow({
-        children: ['Name', 'URN', 'Branch', 'Events'].map(header =>
+        children: ['Name', 'URN', 'Branch', 'Events', 'Total Marks'].map(header =>
           new TableCell({
-            width: { size: 25, type: WidthType.PERCENTAGE },
+            width: { size: 20, type: WidthType.PERCENTAGE },
             children: [new Paragraph({ children: [new TextRun({ text: header, bold: true })] })],
           })
         ),
@@ -193,13 +262,17 @@ function Fetch() {
             student.branchYear,
           ].map(text =>
             new TableCell({
-              width: { size: 25, type: WidthType.PERCENTAGE },
+              width: { size: 20, type: WidthType.PERCENTAGE },
               children: [new Paragraph(text)],
             })
           ).concat(
             new TableCell({
-              width: { size: 25, type: WidthType.PERCENTAGE },
+              width: { size: 20, type: WidthType.PERCENTAGE },
               children: eventParagraphs,
+            }),
+            new TableCell({
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              children: [new Paragraph(calculateMarks(student.events).toString())],
             })
           ),
         });
@@ -253,6 +326,7 @@ function Fetch() {
               <th>URN</th>
               <th>Branch</th>
               <th>Events</th>
+              <th>Total Marks</th>
             </tr>
           </thead>
           <tbody>
@@ -274,6 +348,7 @@ function Fetch() {
                     'No events'
                   )}
                 </td>
+                <td>{calculateMarks(s.events)}</td>
               </tr>
             ))}
           </tbody>
